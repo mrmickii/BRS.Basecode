@@ -18,17 +18,15 @@ namespace BRS.Basecode.Services.Services
 
         public async Task<IEnumerable<User>> GetAllUser()
         {
-            var result = await _userRepository.GetAllUser();
-            return result;
+            return await _userRepository.GetAllUser();
         }
 
         public async Task<User> GetUserById(int userId)
         {
             var user = await _userRepository.GetUserById(userId);
-
-            if(user == null)
+            if (user == null)
             {
-                throw new KeyNotFoundException($"User with id {userId} does not exists.");
+                throw new KeyNotFoundException(Common.Messages.USER_ID_NOT_EXISTS(userId));
             }
             return user;
         }
@@ -37,48 +35,56 @@ namespace BRS.Basecode.Services.Services
         {
             var hasher = new PasswordHasher<User>();
             var latestUserID = await _userRepository.GetLatestUserId();
-            var userExists = (await _userRepository.GetAllUser())
-                .Any(user => user.UserId == model.UserId);
-
-            if (userExists)
-            {
-                throw new InvalidOperationException(Common.Messages.USER_ID_EXISTS(model.UserId));
-            }
 
             var newUser = new User
             {
-                Email = model.Email,
                 UserId = latestUserID + 1,
+                Email = model.Email,
+                Password = hasher.HashPassword(null, model.Password),
                 UserPin = 1234,
-                DateCreated = DateTime.UtcNow
+                DateCreated = DateTime.UtcNow,
+                DateUpdated = DateTime.UtcNow
             };
-
-            newUser.Password = hasher.HashPassword(newUser, model.Password);
 
             await _userRepository.CreateUser(newUser);
         }
 
-        public async Task UpdateUser(CreateUserDTO model)
+        public async Task UpdateUser(UserDTO model)
         {
-            var result = await _userRepository.GetUserById(model.UserId);
-            var hasher = new PasswordHasher<User>();
-
-            if(result == null)
+            var user = await _userRepository.GetUserById(model.UserId);
+            if (user == null)
             {
-                throw new Exception(Common.Messages.USER_NOT_FOUND);
+                throw new KeyNotFoundException(Common.Messages.USER_NOT_FOUND);
             }
 
-            result.Email = model.Email;
-            result.Password = hasher.HashPassword(result, model.Password);
-            result.UserPin = model.UserPin;
-            result.DateCreated = DateTime.UtcNow;
+            var hasher = new PasswordHasher<User>();
+
+            user.Email = model.Email;
+            user.Password = hasher.HashPassword(user, model.Password);
+            user.UserPin = model.UserPin;
+            user.DateCreated = DateTime.UtcNow;
+
+            await _userRepository.UpdateUser(user);
+        }
+
+        public async Task UpdatePin(UpdatePinDTO model)
+        {
+            var user = await _userRepository.GetUserById(model.UserId);
+            if (user == null)
+            {
+                throw new KeyNotFoundException(Common.Messages.USER_NOT_FOUND);
+            }
+
+            user.UserPin = model.UserPin;
+            user.DateUpdated = DateTime.UtcNow;
+
+            await _userRepository.UpdateUser(user);
         }
 
         public async Task DeleteUser(int id)
         {
-            var toDelete = await _userRepository.GetUserById(id);
-
-            if(toDelete != null)
+            var user = await _userRepository.GetUserById(id);
+            if (user != null)
             {
                 await _userRepository.DeleteUser(id);
             }

@@ -21,5 +21,8 @@ namespace BRS.Basecode.Data.Entity
 
         [Column("Date_Created")]
         public DateTime DateCreated { get; set; }
+
+        [Column("Date_Updated")]
+        public DateTime DateUpdated { get; set; }
     }
 }

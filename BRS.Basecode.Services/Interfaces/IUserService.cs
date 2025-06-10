@@ -11,7 +11,9 @@ namespace BRS.Basecode.Services.Interfaces
 
         Task CreateUser(CreateUserDTO model);
 
-        Task UpdateUser(CreateUserDTO model);
+        Task UpdateUser(UserDTO model);
+
+        Task UpdatePin(UpdatePinDTO model);
 
         Task DeleteUser(int id);
     }
